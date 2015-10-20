@@ -96,8 +96,7 @@ public class HttpRouter {
                     String path = pathI.next();
                     if (requestUri.getPath().startsWith(path)) {
                         HttpRoutingRequest bufProcessor = routingRequests.get(path);
-                        if (bufProcessor instanceof StaticRequest ||
-                            bufProcessor instanceof StaticAssetRequest)
+                        if (bufProcessor instanceof StaticRequest || bufProcessor instanceof StaticAssetRequest)
                         {
                             requestProcessor = bufProcessor;
                             break;
@@ -109,6 +108,8 @@ public class HttpRouter {
         if (requestProcessor != null) {
             if (!requestProcessor.callMethod(request, response, context)) {
                 response.render404();
+            } else {
+                response.render();
             }
         } else {
             response.render404();

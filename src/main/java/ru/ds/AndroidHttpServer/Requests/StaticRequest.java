@@ -103,7 +103,7 @@ public class StaticRequest extends HttpRoutingRequest {
                 }
                 byte[] buffer = new byte[bufferSize];
                 stream.read(buffer,0,bufferSize);
-                response.writeBytesToBody(buffer);
+                response.writeBytes(buffer);
             }
         } catch (IOException e) {
             Log.d(TAG, "file stream reading error");

@@ -4,6 +4,8 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -25,9 +27,10 @@ public class HttpResponse {
     private static final String TAG = "HttpResponse";
 
     private OutputStream mOutputStream;
-    private String mStatus                   = "200 OK";
-    private HashMap<String, String> mHeaders = new HashMap<String, String>();
-    private boolean mHeadersIsSended          = false;
+    private String mStatus                    = "200 OK";
+    private HashMap<String, String> mHeaders  = new HashMap<String, String>();
+    private boolean mRendered                 = false;
+    final ByteBuffer mBodyBuffer                    = ByteBuffer.allocate(1024*1024*5);
 
     public HttpResponse(OutputStream outputStream) {
         this.mOutputStream = outputStream;
@@ -35,16 +38,17 @@ public class HttpResponse {
         // set the default headers
         mHeaders.put(DefaultHeaders.Server, "AndroidLiteHTTPServer/0.1 beta");
         mHeaders.put(DefaultHeaders.Date, new Date().toString());
-        mHeaders.put(DefaultHeaders.ContentType, "text/html; charset=utf-8");
+        mHeaders.put(DefaultHeaders.ContentType, "text/html; charset=UTF-8");
         mHeaders.put(DefaultHeaders.Connection, "close");
+
     }
 
     /** render the 404 page **/
     public void render404() {
         mStatus = "404 Not Found";
-        renderHeaders();
-
-        writelnToBody("404 error. Page not found.");
+        Log.d(TAG, mStatus);
+        writeln("404 error. Page not found.");
+        render();
     }
 
     /** set response status **/
@@ -57,81 +61,111 @@ public class HttpResponse {
         mHeaders.put(headerName, headerValue);
     }
 
-    /** append new string to response body and flush output stream**/
-    public void writeToBody(String string) {
-        renderHeaders();
-        this.write(string);
-        try {
-            mOutputStream.flush();
-        } catch (IOException e) {
-            Log.e(TAG, "error of flushing output stream on writeToBody");
-            e.printStackTrace();
-        }
-    }
-
-    /** append new line to response body and flush output stream**/
-    public void writelnToBody(String line) {
-        renderHeaders();
-        writeToBody(line + "\n");
-    }
-
-    /** append bytes from buffer to response and flush output stream **/
-    public void writeBytesToBody(byte[] responseBytes) {
-        renderHeaders();
-        try {
-            mOutputStream.write(responseBytes);
-            mOutputStream.flush();
-        } catch (IOException e) {
-            Log.e(TAG, "error the write data or flush in the output stream on putBodyBytes");
-            e.printStackTrace();
-        }
-    }
-
     /** put response to output stream */
-    private void renderHeaders() {
-        if (mHeadersIsSended) {
+    public void render() {
+        if (mRendered) {
             return;
         }
 
-        // write status
-        writeln("HTTP/1.x " + mStatus);
+        // set size header
+        int contentLength = mBodyBuffer.position();
+        setHeader(DefaultHeaders.ContentLength, Integer.toString(contentLength));
 
+        Log.d(TAG, "r1");
+        // write status
+        writeToStream("HTTP/1.1 " + mStatus+"\n");
+
+        Log.d(TAG, "r2");
         // write headers
         Iterator headersIterator = mHeaders.entrySet().iterator();
         while (headersIterator.hasNext()) {
             HashMap.Entry<String, String> pair = (HashMap.Entry<String, String>) headersIterator.next();
-            writeln(pair.getKey() + ": " + pair.getValue());
+            writeToStream(pair.getKey() + ": " + pair.getValue() + "\n");
         }
 
-        // flush headers
+        Log.d(TAG, "r3");
+
+        // empty string before body
+        writeToStream("\n");
+
+        Log.d(TAG, "r4: " + Integer.toString(contentLength));
+        //write body
+        mBodyBuffer.position(0);
+        byte[] secondBody = new byte[contentLength];
+
+        mBodyBuffer.get(secondBody, 0, contentLength);
+        writeToStream(secondBody);
+        mBodyBuffer.clear();
+        mRendered = true;
+    }
+
+    /** Write bytes into output stream **/
+    public void writeBytes(byte[] bytes) {
         try {
-            mOutputStream.flush();
-        } catch (IOException e) {
-            Log.e(TAG, "error of flushing output stream on renderHeaders");
+            Log.d(TAG,"writeBytes:" + new String(bytes, "UTF-8"));
+        } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
-        } finally {
-            mHeadersIsSended = true;
-            writeln();
         }
+        if (mRendered) {
+            return;
+        }
+        int sLen = bytes.length;
+        int pos  = mBodyBuffer.position();
+
+        if (sLen + pos >= mBodyBuffer.capacity()) {
+            return;
+        }
+        mBodyBuffer.put(bytes);
     }
 
     /** Write some string into output stream **/
-    private void write(String s) {
+    public void write(String s) {
         try {
-            mOutputStream.write(s.getBytes("UTF-8"));
+            writeBytes(s.getBytes("UTF-8"));
         } catch (IOException e) {
-            Log.e(TAG, "write to output stream error");
+            Log.e(TAG, "write to response body cache error");
             e.printStackTrace();
         }
     }
 
     /** Write some string and new line into output stream **/
-    private void writeln(String s) {
+    public void writeln(String s) {
         this.write(s + "\n");
     }
 
     /** Write is empty line **/
-    private void writeln() {
+    public void writeln() {
         writeln("");
+    }
+
+    /** put bytes to stream **/
+    private void writeToStream(String string) {
+        if (string.length() == 0) {
+            return;
+        }
+        byte[] bytes = null;
+        try {
+            bytes = string.getBytes("UTF-8");
+        } catch (IOException e) {
+            Log.e(TAG, "write string to output stream error");
+            e.printStackTrace();
+        }
+        writeToStream(bytes);
+    }
+
+    /** put string to stream **/
+    private void writeToStream(byte[] bytes) {
+        if (mRendered || bytes == null || bytes.length==0) {
+            return;
+        }
+        try {
+             Log.d(TAG, "write " + Integer.toString(bytes.length) + " bytes" );
+             Log.d(TAG, "write: " + new String(bytes, "UTF-8"));
+            mOutputStream.write(bytes);
+             mOutputStream.flush();
+        } catch (IOException e) {
+            Log.e(TAG, "write bytes to output stream error");
+            e.printStackTrace();
+        }
     }
 }

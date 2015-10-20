@@ -48,7 +48,7 @@ public class DefaultHeaders {
     public static final String ContentDisposition = "content-disposition";
     public static final String ContentEncoding    = "content-encoding";
     public static final String ContentLanguage    = "content-language";
-    public static final String ContentLength      = "content-length";
+    public static final String ContentLength      = "Content-Length";
     public static final String ContentMD5         = "content-md5";
     public static final String ContentRange       = "content-range";
     public static final String ContentType        = "Content-Type";
