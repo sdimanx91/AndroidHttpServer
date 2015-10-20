@@ -1,5 +1,6 @@
 package ru.ds.AndroidHttpServer;
 
+import android.content.Context;
 import android.util.Log;
 
 import java.io.IOException;
@@ -17,21 +18,21 @@ public class HttpRequestProcessor extends Thread {
     private HttpRouter router;
 
     // connection objects
-    private Socket socket;
     private InputStream inputStream;
     private OutputStream outputStream;
+    private Context mContext;
 
     /**
      * this is a constructor which initialize input and output stream
      * @param socket connected tcp socket
      * @param router the request router
      */
-    public HttpRequestProcessor(Socket socket, HttpRouter router) {
+    public HttpRequestProcessor(Socket socket, HttpRouter router, Context context) {
         super();
-        this.socket = socket;
-        this.router = router;
+        this.router   = router;
+        this.mContext = context;
         try {
-            this.inputStream = socket.getInputStream();
+            this.inputStream  = socket.getInputStream();
             this.outputStream = socket.getOutputStream();
         } catch (IOException ioException) {
             Log.e(TAG, "socket stream's error");
@@ -46,7 +47,7 @@ public class HttpRequestProcessor extends Thread {
         HttpRequest.HttpRequestBuilder builder = HttpRequest.HttpRequestBuilder.parse(inputStream);
 
         if (builder != null && builder.get() != null) {
-            router.execute(builder.get(), outputStream);
+            router.execute(builder.get(), outputStream, mContext);
         }
         try {
             outputStream.flush();

@@ -1,5 +1,6 @@
 package ru.ds.AndroidHttpServer;
 
+import android.content.Context;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
@@ -29,6 +30,7 @@ import ru.ds.AndroidHttpServer.Parser.HeaderParser.Head;
  * Parse the http request
  */
 public class HttpRequest {
+    private Context mContext;
     final static private String TAG               = "HttpRequest";
     final static private long   MAX_BUFFER_SIZE   = 1024*1024*5;
     final static private long   MAX_STRING_LENGTH = 1024*5;
@@ -239,6 +241,17 @@ public class HttpRequest {
             if (!builder.parseBody(inputStream, inputStream)) {
                 Log.e(TAG, "Failed parse body of request");
                 return null;
+            }
+            return builder;
+        }
+
+        /**
+         * for context usage
+         */
+        public static HttpRequestBuilder parse(InputStream inputStream, Context context) {
+            HttpRequestBuilder builder = parse(inputStream);
+            if (builder.buffered != null) {
+                builder.buffered.mContext = context;
             }
             return builder;
         }

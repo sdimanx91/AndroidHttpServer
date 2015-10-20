@@ -1,5 +1,6 @@
 package ru.ds.AndroidHttpServer;
 
+import android.content.Context;
 import android.util.Log;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -13,6 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class HttpServerSocket {
 
+    private Context mContext;
     private static final String TAG = "HttpServerSocket";
     private SocketListenerThread mSocketThread;
     private HttpRouter router;
@@ -22,13 +24,13 @@ public class HttpServerSocket {
      * @param port port for ServerSocket
      * @return HttpServerSocket instance if ServerSocket is created successfully or null otherwise
      */
-    public static HttpServerSocket Listen(int port, HttpRouter router) {
+    public static HttpServerSocket Listen(int port, HttpRouter router, Context context) {
         if (router == null) {
             Log.e(TAG, "HttpRouter is Null");
             return null;
         }
         Boolean createSuccess = true;
-        HttpServerSocket creatingSocket = new HttpServerSocket(port, createSuccess, router);
+        HttpServerSocket creatingSocket = new HttpServerSocket(port, createSuccess, router, context);
         if (!createSuccess) {
             creatingSocket = null;
         }
@@ -47,8 +49,9 @@ public class HttpServerSocket {
      * @param port port for ServerSocket
      * @param success reference on Boolean value, if ServerSocket is'n created equally false or true otherwise
      */
-    private HttpServerSocket(int port, Boolean success, HttpRouter router) {
+    private HttpServerSocket(int port, Boolean success, HttpRouter router, Context context) {
         this.router = router;
+        this.mContext = context;
         try {
             this.listenSocket(port);
         } catch (IOException e) {
@@ -68,7 +71,7 @@ public class HttpServerSocket {
         if (mSocketThread == null) {
             mSocketThread = new SocketListenerThread();
         }
-        mSocketThread.startListen(port);
+        mSocketThread.startListen(port, mContext);
     }
 
     /**
@@ -79,9 +82,11 @@ public class HttpServerSocket {
         private int listeningPort;
         private ServerSocket mServerSocket;
         private AtomicBoolean mListening = new AtomicBoolean(true);
+        private Context mContext;
 
         /** set ServerSocket and start thread for listening **/
-        public void startListen(int port) {
+        public void startListen(int port, Context context) {
+            mContext = context;
             listeningPort = port;
             start();
         }
@@ -126,7 +131,7 @@ public class HttpServerSocket {
                 // todo: provide non-blocking socket
                 while (mListening.get()) {
                     Socket socket = mServerSocket.accept();
-                    new HttpRequestProcessor(socket, router).start();
+                    new HttpRequestProcessor(socket, router, mContext).start();
                 }
             }
             catch (SocketException se) {
