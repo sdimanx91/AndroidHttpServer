@@ -30,6 +30,14 @@ Lite Android HTTP Server.
 ```
   router.route("/ApiTest", new ApiExample()); 
 ```
+* Use static folder
+```
+  router.routeStatic("/getPage", "static/html", "index.html)
+```
+or (if default page is <i>index.html</i>)
+```
+  router.routeStatic("/getPage", "static/html")
+```
 * Start listen
 ```
   http = HttpServerSocket.Listen(9090, router);
