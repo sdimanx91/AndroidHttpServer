@@ -139,6 +139,7 @@ public class HttpServerSocket {
             }
             finally {
                 mServerSocket.close();
+                mServerSocket = null;
             }
         }
     }

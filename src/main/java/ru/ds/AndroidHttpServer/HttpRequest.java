@@ -110,14 +110,11 @@ public class HttpRequest {
      */
     public MultipartValue getMultipartFormValue(String key) {
         if (mFormData == null) {
-            Log.d(TAG, "mFormData is null");
             return null;
         }
         if (mFormData instanceof MultipartFormData) {
-            Log.d(TAG, "Thats right");
             return ((MultipartFormData) mFormData).getValue(key);
         }
-        Log.d(TAG, "mFormData instanceof String");
         return null;
     }
 

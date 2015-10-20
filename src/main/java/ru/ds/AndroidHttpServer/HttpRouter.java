@@ -39,14 +39,14 @@ public class HttpRouter {
      * @param directory directory for static files
      * @param useAssets search files in application assets
      */
-    public void routeStatic(String url, String directory, boolean useAssets) {
+    public void routeStatic(String url, String directory) {
         StaticRequest staticRequest;
 
-        if (useAssets) {
+//        if (useAssets) {
             staticRequest = new StaticAssetRequest(directory, url);
-        } else {
-            staticRequest = new StaticRequest(directory, url);
-        }
+//        } else {
+//            staticRequest = new StaticRequest(directory, url);
+//        }
         route(url, staticRequest);
     }
 
@@ -57,14 +57,14 @@ public class HttpRouter {
      * @param defaultResponseFile if file in URL is empty, then use to request this file name.
      * @param useAssets search files in application assets
      */
-    public void routeStatic(String url, String directory, String defaultResponseFile, boolean useAssets) {
+    public void routeStatic(String url, String directory, String defaultResponseFile) {
         StaticRequest staticRequest;
 
-        if (useAssets) {
+//        if (useAssets) {
             staticRequest = new StaticAssetRequest(directory, url, defaultResponseFile);
-        } else {
-            staticRequest = new StaticRequest(directory, url, defaultResponseFile);
-        }
+//        } else {
+//            staticRequest = new StaticRequest(directory, url, defaultResponseFile);
+//        }
         route(url, staticRequest);
     }
 
@@ -94,9 +94,7 @@ public class HttpRouter {
                 Iterator<String> pathI = routingRequests.keySet().iterator();
                 while (pathI.hasNext()) {
                     String path = pathI.next();
-                    Log.d(TAG, "check static: " + path + ", requested: "+requestUri.getPath());
                     if (requestUri.getPath().startsWith(path)) {
-                        Log.d(TAG, "SEARCHED: " + path);
                         HttpRoutingRequest bufProcessor = routingRequests.get(path);
                         if (bufProcessor instanceof StaticRequest ||
                             bufProcessor instanceof StaticAssetRequest)

@@ -18,7 +18,6 @@ public class NetUtils {
             for (NetworkInterface intf : interfaces) {
                 List<InetAddress> addrs = Collections.list(intf.getInetAddresses());
                 for (InetAddress addr : addrs) {
-                    Log.d("NetUtils", addr.getHostAddress());
                     if (!addr.isLoopbackAddress() && (addr instanceof Inet4Address)) {
                         return addr;
                     }
