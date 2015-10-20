@@ -32,9 +32,9 @@ Lite Android HTTP Server.
 ```
 * Use static folder
 ```
-  router.routeStatic("/getPage", "static/html", "index.html)
+  router.routeStatic("/getPage", "static/html", "default.html)
 ```
-or (if default page is <i>index.html</i>)
+if default page is <i>index.html</i> you can use
 ```
   router.routeStatic("/getPage", "static/html")
 ```
