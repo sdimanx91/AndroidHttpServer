@@ -30,6 +30,15 @@ Lite Android HTTP Server.
 ```
   router.route("/ApiTest", new ApiExample()); 
 ```
+* Use static folder
+File "default.html" and other static files must be located in assets folder and in its subfolders.
+```
+  router.routeStatic("/getPage", "static/html", "default.html)
+```
+if default page is <i>index.html</i> you can use
+```
+  router.routeStatic("/getPage", "static/html")
+```
 * Start listen
 ```
   http = HttpServerSocket.Listen(9090, router);
