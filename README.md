@@ -18,6 +18,7 @@ Lite Android HTTP Server.
 ```
    public class ApiExample extends HttpRoutingRequest {
       
+      //You can use doPost, doOptions, etc...
       @Override
       public void doGet(HttpRequest request, HttpResponse response) {
         // If this method returns false then response will contain 404 error.
