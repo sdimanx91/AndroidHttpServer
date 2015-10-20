@@ -31,6 +31,7 @@ Lite Android HTTP Server.
   router.route("/ApiTest", new ApiExample()); 
 ```
 * Use static folder
+File "default.html" and other static files must be located in assets folder and in its subfolders.
 ```
   router.routeStatic("/getPage", "static/html", "default.html)
 ```
