@@ -3,12 +3,14 @@ package ru.ds.AndroidHttpServer;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
+import java.io.CharArrayReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
 import java.util.HashMap;
 import java.util.Set;
@@ -345,13 +347,12 @@ public class HttpRequest {
          * @throws IOException
          */
         public static String readStringFromBuffer(InputStream inputStream) throws IOException {
-            StringBuffer sBuffer = new StringBuffer();
-
-            if (inputStream.available() == 0) {
+            if (inputStream.available() == 0 || inputStream.available() > MAX_STRING_LENGTH) {
                 return null;
             }
             int counted=0;
             int newChar=-1;
+            ByteBuffer byteBuffer = ByteBuffer.allocate((int)MAX_STRING_LENGTH);
             do {
                 if (counted >= MAX_STRING_LENGTH) {
                     break;
@@ -360,18 +361,14 @@ public class HttpRequest {
                     break;
                 }
                 newChar = inputStream.read();
-                sBuffer.appendCodePoint(newChar);
+                byteBuffer.put((byte) newChar);
                 counted++;
-                if (newChar == '\n') {
+                // 10 - \n 13 - \r
+                if (newChar == 10) {
                     break;
                 }
             } while (true);
-
-            if (newChar != '\n') {
-                sBuffer.append('\n');
-            }
-
-            return sBuffer.toString();
+            return new String(byteBuffer.array(), "UTF-8");
         }
     }
 }
