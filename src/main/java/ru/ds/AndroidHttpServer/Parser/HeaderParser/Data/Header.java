@@ -32,6 +32,13 @@ public class Header  {
     }
 
     /**
+     * @return full, not parsed, header string
+     */
+    public String getHeaderValue() {
+        return headerValueString;
+    }
+
+    /**
      * overflow, for init other header types;
      */
     public void parse(String valueString) {

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.util.Log;
 
 import java.io.OutputStream;
+import java.net.Socket;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Iterator;

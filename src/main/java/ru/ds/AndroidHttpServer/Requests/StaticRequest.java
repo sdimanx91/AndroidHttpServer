@@ -52,19 +52,13 @@ public class StaticRequest extends HttpRoutingRequest {
         }
 
         String path = url.getPath();
-        Log.d(TAG, "mRes path = " + mPathToResource);
-        Log.d(TAG, "default path = " + path);
-        Log.d(TAG, "fileName = " + url.getFile());
         path = path.substring(mBaseUrl.length());
-        Log.d(TAG, "sub path = " + path);
         if (path.trim().isEmpty()) {
             path = "/" + getDefaultName();
         }
-        Log.d(TAG, "ok path = " + path);
         StringBuffer sBuffer = new StringBuffer();
         sBuffer.append(mPathToResource);
         sBuffer.append(path);
-        Log.d(TAG, "b = " + sBuffer.toString());
         return sBuffer.toString();
     }
 

@@ -5,10 +5,13 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.HttpCookie;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import ru.ds.AndroidHttpServer.Const.DefaultHeaders;
 
@@ -30,7 +33,10 @@ public class HttpResponse {
     private String mStatus                    = "200 OK";
     private HashMap<String, String> mHeaders  = new HashMap<String, String>();
     private boolean mRendered                 = false;
-    final ByteBuffer mBodyBuffer                    = ByteBuffer.allocate(1024*1024*5);
+//    final ByteBuffer mBodyBuffer                    = ByteBuffer.allocate(1024*1024*5);
+    final HashMap<String, String> mCookies = new HashMap<String, String>();
+    final List<byte[]> mBodyBuffer = new ArrayList<byte[]>();
+    private int contentLength=0;
 
     public HttpResponse(OutputStream outputStream) {
         this.mOutputStream = outputStream;
@@ -61,21 +67,76 @@ public class HttpResponse {
         mHeaders.put(headerName, headerValue);
     }
 
+    /**
+     * append cookie
+     *
+     * todo: cookie must contain expires or max-age
+     * domain can be null
+     * key and value cannot be null
+     **/
+    public void putCookie(String key, String value, String domain, String path, long maxAge, Date expires) {
+        if (key == null || value == null) {
+            return;
+        }
+        StringBuffer cookieBuffer = new StringBuffer();
+
+        cookieBuffer.append(key);
+        cookieBuffer.append("=");
+        cookieBuffer.append(value);
+        cookieBuffer.append(";");
+
+        if (domain != null) {
+            cookieBuffer.append("domain=\"");
+            cookieBuffer.append(domain);
+            cookieBuffer.append("\";");
+        }
+
+        if (path != null) {
+            cookieBuffer.append("path=");
+            cookieBuffer.append(path);
+            cookieBuffer.append(";");
+        }
+
+        if (maxAge >= 0) {
+            cookieBuffer.append("Max-Age=");
+            cookieBuffer.append(maxAge);
+            cookieBuffer.append(";");
+        }
+
+        mCookies.put(key, cookieBuffer.toString());
+    }
+
+    public void putCookie(String key, String value) {
+        putCookie(key, value, null, null, -1L, null);
+    }
+    public void putCookie(String key, String value, long maxAge) {
+        putCookie(key, value, null, null, maxAge, null);
+    }
+    public void putCookie(String key, String value, Date expires) {
+        putCookie(key, value, null, null, -1L, expires);
+    }
+    public void putCookie(String key, String value, String path) {
+        putCookie(key, value, null, path, -1L, null);
+    }
+    public void putCookie(String key, String value, String path, long maxAge) {
+        putCookie(key, value, null, path, maxAge, null);
+    }
+    public void putCookie(String key, String value,String path, Date expires) {
+        putCookie(key, value, null, path, -1L, expires);
+    }
+
+
     /** put response to output stream */
     public void render() {
         if (mRendered) {
             return;
         }
 
-        // set size header
-        int contentLength = mBodyBuffer.position();
         setHeader(DefaultHeaders.ContentLength, Integer.toString(contentLength));
 
-        Log.d(TAG, "r1");
         // write status
         writeToStream("HTTP/1.1 " + mStatus+"\n");
 
-        Log.d(TAG, "r2");
         // write headers
         Iterator headersIterator = mHeaders.entrySet().iterator();
         while (headersIterator.hasNext()) {
@@ -83,39 +144,35 @@ public class HttpResponse {
             writeToStream(pair.getKey() + ": " + pair.getValue() + "\n");
         }
 
-        Log.d(TAG, "r3");
+        Iterator cookiesIterator = mCookies.entrySet().iterator();
+        while (cookiesIterator.hasNext()) {
+            HashMap.Entry<String, HttpCookie> pair = (HashMap.Entry<String, HttpCookie>) cookiesIterator.next();
+            writeToStream(DefaultHeaders.SetCookie + ":" + pair.getValue() + "\n");
+        }
 
         // empty string before body
         writeToStream("\n");
 
-        Log.d(TAG, "r4: " + Integer.toString(contentLength));
         //write body
-        mBodyBuffer.position(0);
-        byte[] secondBody = new byte[contentLength];
-
-        mBodyBuffer.get(secondBody, 0, contentLength);
-        writeToStream(secondBody);
-        mBodyBuffer.clear();
+        Iterator<byte[]> bodyBufferIterator = mBodyBuffer.iterator();
+        while (!mBodyBuffer.isEmpty()) {
+            byte[] mBodyCh = bodyBufferIterator.next();
+            if (mBodyCh != null) {
+                writeToStream(mBodyCh);
+            }
+            bodyBufferIterator.remove();
+        }
         mRendered = true;
     }
 
     /** Write bytes into output stream **/
     public void writeBytes(byte[] bytes) {
-        try {
-            Log.d(TAG,"writeBytes:" + new String(bytes, "UTF-8"));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
         if (mRendered) {
             return;
         }
-        int sLen = bytes.length;
-        int pos  = mBodyBuffer.position();
-
-        if (sLen + pos >= mBodyBuffer.capacity()) {
-            return;
+        if (mBodyBuffer.add(bytes)) {
+            contentLength += bytes.length;
         }
-        mBodyBuffer.put(bytes);
     }
 
     /** Write some string into output stream **/
@@ -159,10 +216,8 @@ public class HttpResponse {
             return;
         }
         try {
-             Log.d(TAG, "write " + Integer.toString(bytes.length) + " bytes" );
-             Log.d(TAG, "write: " + new String(bytes, "UTF-8"));
             mOutputStream.write(bytes);
-             mOutputStream.flush();
+            mOutputStream.flush();
         } catch (IOException e) {
             Log.e(TAG, "write bytes to output stream error");
             e.printStackTrace();

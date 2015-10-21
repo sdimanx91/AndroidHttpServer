@@ -18,6 +18,7 @@ public class HttpRequestProcessor extends Thread {
     private HttpRouter router;
 
     // connection objects
+    private Socket mSocket;
     private InputStream inputStream;
     private OutputStream outputStream;
     private Context mContext;
@@ -34,6 +35,7 @@ public class HttpRequestProcessor extends Thread {
         try {
             this.inputStream  = socket.getInputStream();
             this.outputStream = socket.getOutputStream();
+            this.mSocket      = socket;
         } catch (IOException ioException) {
             Log.e(TAG, "socket stream's error");
             ioException.printStackTrace();
@@ -44,7 +46,7 @@ public class HttpRequestProcessor extends Thread {
     /** Reading the Socket input buffer and line-to-line and process them**/
     @Override
     public void run() {
-        HttpRequest.HttpRequestBuilder builder = HttpRequest.HttpRequestBuilder.parse(inputStream);
+        HttpRequest.HttpRequestBuilder builder = HttpRequest.HttpRequestBuilder.parse(inputStream, mSocket);
 
         if (builder != null && builder.get() != null) {
             router.execute(builder.get(), outputStream, mContext);

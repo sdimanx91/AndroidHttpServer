@@ -2,18 +2,23 @@ package ru.ds.AndroidHttpServer;
 
 import android.content.Context;
 import android.util.Log;
+import android.util.Pair;
 
 import java.io.BufferedInputStream;
 import java.io.CharArrayReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpCookie;
 import java.net.MalformedURLException;
+import java.net.Socket;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 
 import ru.ds.AndroidHttpServer.Const.DefaultHeaders;
@@ -30,13 +35,13 @@ import ru.ds.AndroidHttpServer.Parser.HeaderParser.Head;
  * Parse the http request
  */
 public class HttpRequest {
-    private Context mContext;
     final static private String TAG               = "HttpRequest";
     final static private long   MAX_BUFFER_SIZE   = 1024*1024*5;
     final static private long   MAX_STRING_LENGTH = 1024*5;
 
     final private HashMap<String, Header> mHeaders = new HashMap<String, Header>();
 
+    private Socket    mSocket      = null;
     private FormData  mFormData    = null;
     private FirstLine mRequestData = null;
     private byte[]    mBinary;    // binary data in the request body (if contains)
@@ -48,6 +53,13 @@ public class HttpRequest {
      */
     public FirstLine getRequestData() {
         return mRequestData;
+    }
+
+    /**
+     * Get connection socket
+     */
+    public Socket getSocket() {
+        return mSocket;
     }
 
     /**
@@ -100,6 +112,33 @@ public class HttpRequest {
             return  "";
         }
         return mFormData.getFormValue(key);
+    }
+
+    /**
+     * @return List of cookies from the request
+     */
+    public List<Pair<String, String>> getCookies() {
+        Header cookieHeader = getHeader(DefaultHeaders.Cookie);
+        if (cookieHeader == null) {
+            return null;
+        }
+        List<Pair<String, String>> buffer= new ArrayList<Pair<String, String>>();
+        String[] cookies = cookieHeader.getHeaderValue().split(";");
+        if (cookies == null || cookies.length == 0) {
+            return null;
+        }
+
+        for (  int i=0; i<cookies.length; i++  ) {
+            String cookiePairString = cookies[i].trim();
+            int eqIndex = cookiePairString.indexOf("=");
+            if (eqIndex <=0 || eqIndex >= cookiePairString.length()-1) {
+                continue;
+            }
+            String key = cookiePairString.substring(0, eqIndex);
+            String value = cookiePairString.substring(eqIndex+1);
+            buffer.add(new Pair<String, String>(  key, value  ));
+        }
+        return buffer;
     }
 
     /**
@@ -202,8 +241,9 @@ public class HttpRequest {
          * @param inputStream InputStream of the socket
          * @return new HttpRequestBuilder
          */
-        public static HttpRequestBuilder parse(InputStream inputStream) {
+        public static HttpRequestBuilder parse(InputStream inputStream, Socket socket) {
             final HttpRequestBuilder builder = new HttpRequestBuilder();
+            builder.buffered.mSocket = socket;
             String firstLine;
             try {
                 firstLine = HttpRequestBuilder.readStringFromBuffer(inputStream);
@@ -245,11 +285,8 @@ public class HttpRequest {
         /**
          * for context usage
          */
-        public static HttpRequestBuilder parse(InputStream inputStream, Context context) {
-            HttpRequestBuilder builder = parse(inputStream);
-            if (builder.buffered != null) {
-                builder.buffered.mContext = context;
-            }
+        public static HttpRequestBuilder parse(InputStream inputStream, Socket socket, Context context) {
+            HttpRequestBuilder builder = parse(inputStream, socket);
             return builder;
         }
 

@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.util.Log;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -45,10 +47,14 @@ public class StaticAssetRequest extends  StaticRequest {
 
         try {
             return assetManager.open(pathToFile);
-        } catch (IOException e) {
+        }
+        catch (FileNotFoundException fnf) {
+            Log.e(TAG, "File: " + pathToFile + " not found");
+        }
+        catch (IOException e) {
             Log.e(TAG, "Asset Manager error");
             e.printStackTrace();
-            return null;
         }
+        return null;
     }
 }

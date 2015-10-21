@@ -65,4 +65,7 @@ public class DefaultHeaders {
     public static final String Upgrade            = "upgrade";
     public static final String Via                = "via";
     public static final String Warning            = "warning";
+
+    public static final String Cookie            = "Cookie";
+    public static final String SetCookie            = "Set-Cookie";
 }
