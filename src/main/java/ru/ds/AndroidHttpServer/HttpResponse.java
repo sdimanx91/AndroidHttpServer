@@ -33,7 +33,6 @@ public class HttpResponse {
     private String mStatus                    = "200 OK";
     private HashMap<String, String> mHeaders  = new HashMap<String, String>();
     private boolean mRendered                 = false;
-//    final ByteBuffer mBodyBuffer                    = ByteBuffer.allocate(1024*1024*5);
     final HashMap<String, String> mCookies = new HashMap<String, String>();
     final List<byte[]> mBodyBuffer = new ArrayList<byte[]>();
     private int contentLength=0;
@@ -52,7 +51,6 @@ public class HttpResponse {
     /** render the 404 page **/
     public void render404() {
         mStatus = "404 Not Found";
-        Log.d(TAG, mStatus);
         writeln("404 error. Page not found.");
         render();
     }

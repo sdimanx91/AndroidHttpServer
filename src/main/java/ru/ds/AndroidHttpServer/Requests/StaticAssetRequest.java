@@ -14,7 +14,7 @@ import ru.ds.AndroidHttpServer.HttpRequest;
 import ru.ds.AndroidHttpServer.HttpResponse;
 
 /**
- * Created by dmitrijslobodchikov on 20.10.15.
+ * Read data from project assets.
  */
 public class StaticAssetRequest extends  StaticRequest {
 

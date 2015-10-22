@@ -9,6 +9,7 @@ import java.io.CharArrayReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.net.MalformedURLException;
 import java.net.Socket;
@@ -20,6 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
+
+import javax.net.ssl.SSLSocket;
 
 import ru.ds.AndroidHttpServer.Const.DefaultHeaders;
 import ru.ds.AndroidHttpServer.Const.HTTPMethods;
@@ -45,6 +48,8 @@ public class HttpRequest {
     private FormData  mFormData    = null;
     private FirstLine mRequestData = null;
     private byte[]    mBinary;    // binary data in the request body (if contains)
+
+    private boolean useSSL = false;
 
     public HttpRequest() { }
 
@@ -243,14 +248,11 @@ public class HttpRequest {
          */
         public static HttpRequestBuilder parse(InputStream inputStream, Socket socket) {
             final HttpRequestBuilder builder = new HttpRequestBuilder();
-            builder.buffered.mSocket = socket;
-            String firstLine;
-            try {
-                firstLine = HttpRequestBuilder.readStringFromBuffer(inputStream);
-            } catch (IOException e) {
-                Log.e(TAG, "Failed parse first line of request.");
-                return null;
+            if (socket instanceof SSLSocket) {
+                builder.buffered.useSSL = true;
             }
+            builder.buffered.mSocket = socket;
+            String firstLine = HttpRequestBuilder.readStringFromBuffer(inputStream);;
             if (firstLine == null || firstLine.trim().isEmpty()) {
                 Log.e(TAG, "First line of the request is empty");
                 return null;
@@ -295,21 +297,16 @@ public class HttpRequest {
          * @return successfully parsed
          */
         private boolean parseHead(InputStream inputStream, ParserHeaderInterface onParse) {
-            try {
-                String line = readStringFromBuffer(inputStream);
-                // parse other headers
-                while (line != null && !line.trim().isEmpty()) {
-                    Header header = Head.parseHeader(line);
-                    if (header == null || (header != null && !header.isValid())) {
-                        Log.e(TAG, "invalid header: " + line);
-                    } else {
-                        onParse.use(header);
-                    }
-                    line = readStringFromBuffer(inputStream);
+            String line = readStringFromBuffer(inputStream);
+            // parse other headers
+            while (line != null && !line.trim().isEmpty()) {
+                Header header = Head.parseHeader(line);
+                if (header == null || (header != null && !header.isValid())) {
+                    Log.e(TAG, "invalid header: " + line);
+                } else {
+                    onParse.use(header);
                 }
-            } catch (IOException e) {
-                Log.e(TAG, "read buffer error");
-                return false;
+                line = readStringFromBuffer(inputStream);
             }
             return true;
         }
@@ -357,7 +354,7 @@ public class HttpRequest {
             int intSize = (int)bodySize;
             buffered.mBinary = new byte[intSize];
             try {
-                if (intSize > stream.available()) {
+                if (intSize > MAX_BUFFER_SIZE) {
                     return false;
                 }
                 int readedBytesCount = stream.read(buffered.mBinary, 0, intSize);
@@ -393,29 +390,49 @@ public class HttpRequest {
          * @return
          * @throws IOException
          */
-        public static String readStringFromBuffer(InputStream inputStream) throws IOException {
-            if (inputStream.available() == 0 || inputStream.available() > MAX_STRING_LENGTH) {
+        public static String readStringFromBuffer(InputStream inputStream)  {
+            if (inputStream == null) {
                 return null;
             }
+
             int counted=0;
             int newChar=-1;
+
+            int tryCount = 10;
             ByteBuffer byteBuffer = ByteBuffer.allocate((int)MAX_STRING_LENGTH);
+//            StringBuffer stringBuffer = new StringBuffer();
             do {
                 if (counted >= MAX_STRING_LENGTH) {
                     break;
                 }
-                if (inputStream.available() == 0) {
+                try {
+                    newChar = inputStream.read();
+                } catch (IOException e) {
+                    e.printStackTrace();
                     break;
                 }
-                newChar = inputStream.read();
+                if (newChar<0) {
+                    break;
+                }
                 byteBuffer.put((byte) newChar);
+
                 counted++;
-                // 10 - \n 13 - \r
-                if (newChar == 10) {
+                if ((char)newChar == '\n') {
                     break;
                 }
             } while (true);
-            return new String(byteBuffer.array(), "UTF-8");
+
+            String result=null;
+            try {
+                byte[] resultBytes = new byte[counted];
+                byteBuffer.position(0);
+                byteBuffer.get(resultBytes, 0, counted);
+                result =  new String(resultBytes, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+                return null;
+            }
+            return result;
         }
     }
 }

@@ -14,7 +14,7 @@ import ru.ds.AndroidHttpServer.HttpRequest;
 import ru.ds.AndroidHttpServer.HttpResponse;
 
 /**
- * Created by dmitrijslobodchikov on 20.10.15.
+ * ....
  */
 public class StaticRequest extends HttpRoutingRequest {
     protected static final int STREAMS_IN_OUT_BUFFER =  1024*5;
@@ -76,7 +76,6 @@ public class StaticRequest extends HttpRoutingRequest {
         try {
             stream = new FileInputStream(file);
         } catch (FileNotFoundException e) {
-            Log.d(TAG, "FileNotFoundException");
             e.printStackTrace();
             return null;
         }
@@ -100,14 +99,12 @@ public class StaticRequest extends HttpRoutingRequest {
                 response.writeBytes(buffer);
             }
         } catch (IOException e) {
-            Log.d(TAG, "file stream reading error");
             e.printStackTrace();
             return false;
         } finally {
             try {
                 stream.close();
             } catch (IOException e) {
-                Log.d(TAG, "file inputstream close error");
                 e.printStackTrace();
                 return false;
             }

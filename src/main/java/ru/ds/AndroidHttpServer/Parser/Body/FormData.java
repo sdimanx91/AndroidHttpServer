@@ -33,13 +33,7 @@ public class FormData  {
         StringBuffer sBuffer = new StringBuffer();
         do {
             String line = null;
-            try {
-                line = HttpRequest.HttpRequestBuilder.readStringFromBuffer(inputStream);
-            } catch (IOException e) {
-                Log.e(TAG, "read error");
-                e.printStackTrace();
-                return;
-            }
+            line = HttpRequest.HttpRequestBuilder.readStringFromBuffer(inputStream);
             if (line == null) {
                 break;
             }
@@ -87,11 +81,9 @@ public class FormData  {
      * @return the object value instance
      */
     protected Object getObject(String key) {
-        Log.d(TAG, "requested: " +key);
         Iterator<Map.Entry<String, Object>> i = mFormData.entrySet().iterator();
         while (i.hasNext()) {
             Map.Entry<String, Object> e = i.next();
-            Log.d(TAG, "key = " + e.getKey());
         }
         return mFormData.get(key);
     }

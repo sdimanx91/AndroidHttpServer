@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
+import javax.net.ssl.SSLSocket;
+
 /**
  * Created by dmitrijslobodchikov on 11.10.15.
  */
@@ -30,8 +32,7 @@ public class HttpRequestProcessor extends Thread {
      */
     public HttpRequestProcessor(Socket socket, HttpRouter router, Context context) {
         super();
-        this.router   = router;
-        this.mContext = context;
+        initParams(router, context);
         try {
             this.inputStream  = socket.getInputStream();
             this.outputStream = socket.getOutputStream();
@@ -43,9 +44,18 @@ public class HttpRequestProcessor extends Thread {
         }
     }
 
+    private void initParams(HttpRouter router, Context context) {
+        this.router   = router;
+        this.mContext = context;
+    }
+
+
     /** Reading the Socket input buffer and line-to-line and process them**/
     @Override
     public void run() {
+        if (outputStream == null || inputStream == null) {
+            return;
+        }
         HttpRequest.HttpRequestBuilder builder = HttpRequest.HttpRequestBuilder.parse(inputStream, mSocket);
 
         if (builder != null && builder.get() != null) {

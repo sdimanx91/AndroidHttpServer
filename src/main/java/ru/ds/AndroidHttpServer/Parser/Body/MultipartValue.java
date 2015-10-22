@@ -35,9 +35,7 @@ public class MultipartValue {
         }
         mPartKey = contentDisposition.getParameterValue(NAME_HEADER);
 
-        Log.d(TAG, "nameKeyValue = " + mPartKey);
         readBody(multipartString);
-        Log.d(TAG, "body=" + mBody);
         mValid = (mBody.length()>0);
     }
 
@@ -64,7 +62,6 @@ public class MultipartValue {
         Iterator<String> iterator = multipartString.iterator();
         while (iterator.hasNext()) {
             String value = iterator.next();
-            Log.d(TAG, value);
             iterator.remove();
             if (value.trim().isEmpty()) {
                 return;

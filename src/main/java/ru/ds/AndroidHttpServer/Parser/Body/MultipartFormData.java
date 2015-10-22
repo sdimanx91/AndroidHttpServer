@@ -50,17 +50,13 @@ public class MultipartFormData extends FormData {
      * @return value
      */
     public MultipartValue getValue(String key) {
-        Log.d(TAG, "get value = " + key);
         Object value = getObject(key.toLowerCase());
         if (value == null) {
-            Log.d(TAG, "value == null");
             return null;
         }
         if (value instanceof MultipartValue) {
-            Log.d(TAG, "value instanceof MultipartValue");
             return (MultipartValue) value;
         }
-        Log.d(TAG, "NOT value instanceof MultipartValue");
         return null;
     }
 
@@ -71,7 +67,7 @@ public class MultipartFormData extends FormData {
         if (boundary == null || boundary.isEmpty()) {
             return false;
         }
-        Log.d(TAG, "search new multipart");
+
         final String startBoundery = "--"+boundary;
         final String endBoundary   =startBoundery + "--";
 
@@ -104,7 +100,6 @@ public class MultipartFormData extends FormData {
         final String startBoundery = "--" + boundary;
         final String endBoundary   =startBoundery + "--";
 
-        Log.d(TAG, "start multipart");
         processLines(inputStream, new LineProcessor() {
             @Override
             public ProcessingState ProcessLine(String line) {
@@ -116,13 +111,11 @@ public class MultipartFormData extends FormData {
                 if (l == null) {
                     return ProcessingState.STOP_LINE;
                 }
-                Log.d(TAG, "Line = " + line);
+
                 if (l.isEmpty()) {
                     if (emptyLineSkipped[0]) {
-                        Log.d(TAG, "Is empty. End part!");
                         return ProcessingState.STOP_LINE;
                     } else {
-                        Log.d(TAG, "Is empty. Start body!");
                         emptyLineSkipped[0] = true;
                     }
                 }
@@ -140,7 +133,6 @@ public class MultipartFormData extends FormData {
                 } else if (l.equals(endBoundary)) {
                     return ProcessingState.STOP_LINE;
                 }
-                Log.d(TAG, "append lines = " + line);
                 partStrings.add(line);
                 return ProcessingState.CONTINUE;
             }
@@ -155,13 +147,7 @@ public class MultipartFormData extends FormData {
         boolean result = false;
         while (true) {
             String line = null;
-            try {
-                line = HttpRequest.HttpRequestBuilder.readStringFromBuffer(inputStream);
-            } catch (IOException e) {
-                Log.e(TAG, "read multipart data error");
-                e.printStackTrace();
-                break;
-            }
+            line = HttpRequest.HttpRequestBuilder.readStringFromBuffer(inputStream);
             ProcessingState state = processor.ProcessLine(line == null ? line : line.trim());
             if (state == ProcessingState.STOP_LINE) {
                 result = false;
