@@ -29,7 +29,6 @@ public class FormData  {
      */
     public FormData(InputStream inputStream, long requestedSize, Socket socket) {
         if (inputStream == null) {
-            Log.d(TAG, "inputStream = null");
             return;
         }
         StringBuffer sBuffer = new StringBuffer();
