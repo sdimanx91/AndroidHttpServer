@@ -13,6 +13,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.net.MalformedURLException;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -252,7 +253,7 @@ public class HttpRequest {
                 builder.buffered.useSSL = true;
             }
             builder.buffered.mSocket = socket;
-            String firstLine = HttpRequestBuilder.readStringFromBuffer(inputStream);;
+            String firstLine = HttpRequestBuilder.readStringFromBuffer(inputStream, builder.buffered.mSocket);
             if (firstLine == null || firstLine.trim().isEmpty()) {
                 Log.e(TAG, "First line of the request is empty");
                 return null;
@@ -297,7 +298,7 @@ public class HttpRequest {
          * @return successfully parsed
          */
         private boolean parseHead(InputStream inputStream, ParserHeaderInterface onParse) {
-            String line = readStringFromBuffer(inputStream);
+            String line = readStringFromBuffer(inputStream, buffered.mSocket);
             // parse other headers
             while (line != null && !line.trim().isEmpty()) {
                 Header header = Head.parseHeader(line);
@@ -306,7 +307,7 @@ public class HttpRequest {
                 } else {
                     onParse.use(header);
                 }
-                line = readStringFromBuffer(inputStream);
+                line = readStringFromBuffer(inputStream, buffered.mSocket);
             }
             return true;
         }
@@ -338,12 +339,12 @@ public class HttpRequest {
             if (contentType.isRaw()) {
                 return parseBinary(stream, contentLength);
             } else if (contentType.isXWwwFormUrlencoded()) {
-                buffered.mFormData = new FormData(io, contentLength);
+                buffered.mFormData = new FormData(io, contentLength, buffered.mSocket);
                 return true;
             } else if (contentType.isUntypedBinary()) {
                 return parseBinary(stream, contentLength);
             } else if (contentType.isMultipartFormData()) {
-                buffered.mFormData = new MultipartFormData(io, contentType);
+                buffered.mFormData = new MultipartFormData(io, contentType, buffered.mSocket);
                 return true;
             }
             return false;
@@ -390,7 +391,7 @@ public class HttpRequest {
          * @return
          * @throws IOException
          */
-        public static String readStringFromBuffer(InputStream inputStream)  {
+        public static String readStringFromBuffer(InputStream inputStream, Socket socket)  {
             if (inputStream == null) {
                 return null;
             }
@@ -400,37 +401,48 @@ public class HttpRequest {
 
             int tryCount = 10;
             ByteBuffer byteBuffer = ByteBuffer.allocate((int)MAX_STRING_LENGTH);
-//            StringBuffer stringBuffer = new StringBuffer();
             do {
                 if (counted >= MAX_STRING_LENGTH) {
                     break;
                 }
+                newChar=-1;
                 try {
+                    if (socket != null) {
+                        socket.setSoTimeout(50);
+                    }
                     newChar = inputStream.read();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    break;
                 }
+                catch (SocketTimeoutException ste) {
+                    newChar=-1;
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                    newChar=-1;
+                }
+
                 if (newChar<0) {
                     break;
                 }
                 byteBuffer.put((byte) newChar);
-
                 counted++;
+
                 if ((char)newChar == '\n') {
                     break;
                 }
             } while (true);
 
             String result=null;
-            try {
-                byte[] resultBytes = new byte[counted];
-                byteBuffer.position(0);
-                byteBuffer.get(resultBytes, 0, counted);
-                result =  new String(resultBytes, "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-                return null;
+
+            if (counted > 0) {
+                try {
+                    byte[] resultBytes = new byte[counted];
+                    byteBuffer.position(0);
+                    byteBuffer.get(resultBytes, 0, counted);
+                    result = new String(resultBytes, "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                    return null;
+                }
             }
             return result;
         }

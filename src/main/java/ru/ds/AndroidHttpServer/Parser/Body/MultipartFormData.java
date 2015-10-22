@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -17,6 +18,7 @@ import ru.ds.AndroidHttpServer.Parser.HeaderParser.ContentType;
  */
 public class MultipartFormData extends FormData {
 
+    private Socket mSocket;
     private static final String TAG = "MultipartFormData";
     private enum ProcessingState {START_LINE, STOP_LINE, CONTINUE }
 
@@ -25,8 +27,9 @@ public class MultipartFormData extends FormData {
      * @param reader BufferedReader of the Socket
      * @param requestedSize value of Content-Length header
      */
-    public MultipartFormData(InputStream inputStream, ContentType contentTypeHeader) {
-        super(null, 0);
+    public MultipartFormData(InputStream inputStream, ContentType contentTypeHeader, Socket socket) {
+        super(null, 0, socket);
+        mSocket = socket;
         String boundary = contentTypeHeader.getBoundary();
         if (boundary == null || boundary.isEmpty()) {
             return;
@@ -147,7 +150,7 @@ public class MultipartFormData extends FormData {
         boolean result = false;
         while (true) {
             String line = null;
-            line = HttpRequest.HttpRequestBuilder.readStringFromBuffer(inputStream);
+            line = HttpRequest.HttpRequestBuilder.readStringFromBuffer(inputStream, mSocket);
             ProcessingState state = processor.ProcessLine(line == null ? line : line.trim());
             if (state == ProcessingState.STOP_LINE) {
                 result = false;

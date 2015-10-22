@@ -6,6 +6,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -26,14 +27,15 @@ public class FormData  {
      * @param reader BufferedReader of the Socket
      * @param requestedSize value of Content-Length header
      */
-    public FormData(InputStream inputStream, long requestedSize) {
+    public FormData(InputStream inputStream, long requestedSize, Socket socket) {
         if (inputStream == null) {
+            Log.d(TAG, "inputStream = null");
             return;
         }
         StringBuffer sBuffer = new StringBuffer();
         do {
             String line = null;
-            line = HttpRequest.HttpRequestBuilder.readStringFromBuffer(inputStream);
+            line = HttpRequest.HttpRequestBuilder.readStringFromBuffer(inputStream, socket);
             if (line == null) {
                 break;
             }
